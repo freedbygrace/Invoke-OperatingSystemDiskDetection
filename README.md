@@ -49,23 +49,19 @@ VERBOSE: 10/16/2023 15:49:18.276 - BusTypePriority: 1
 
 VERBOSE: 10/16/2023 15:49:18.277 - SizeInGB: 953.87
 
-VERBOSE: 10/16/2023 15:49:18.28 - Attempting to the value of task sequence variable "OSDDiskIndex" to "1". Please Wait...
+VERBOSE: 10/16/2023 15:49:18.28 - Attempting to set the value of task sequence variable "OSDDiskIndex" to "1". Please Wait...
 
-VERBOSE: 10/16/2023 15:49:18.282 - Attempting to the value of task sequence variable "OSDiskNumber" to "1". Please Wait...
+VERBOSE: 10/16/2023 15:49:18.282 - Attempting to set the value of task sequence variable "OSDiskNumber" to "1". Please Wait...
 
-VERBOSE: 10/16/2023 15:49:18.282 - Attempting to the value of task sequence variable "OSDDiskCount" to "2". Please Wait...
+VERBOSE: 10/16/2023 15:49:18.282 - Attempting to set the value of task sequence variable "OSDDiskCount" to "2". Please Wait...
 
 
-DiskList                          : {@{DiskNumber=1; Manufacturer=; FriendlyName=Micron 2300 NVMe 1024GB; Model=Micron 2300 NVMe 1024GB; 
-                                    SerialNumber=0000_0000_0000_0001_00A0_7521_2E85_6C41.; MediaType=SSD; MediaTypePriority=1; BusType=NVMe; BusTypePriority=1; SizeInGB=953.87}, 
-                                    
-                                    @{DiskNumber=0; Manufacturer=; FriendlyName=PC601 SED NVMe SK hynix 1TB; Model=PC601 SED NVMe SK hynix 1TB; 
-                                    SerialNumber=ACE4_2E00_157D_071D_2EE4_AC00_0000_0001.; MediaType=SSD; MediaTypePriority=1; BusType=NVMe; BusTypePriority=1; SizeInGB=953.87}}
+DiskList                          : {@{DiskNumber=1; Manufacturer=; FriendlyName=Micron 2300 NVMe 1024GB; Model=Micron 2300 NVMe 1024GB; SerialNumber=0000_0000_0000_0001_00A0_7521_2E85_6C41.; MediaType=SSD; MediaTypePriority=1; BusType=NVMe; BusTypePriority=1; SizeInGB=953.87},               
+                                    @{DiskNumber=0; Manufacturer=; FriendlyName=PC601 SED NVMe SK hynix 1TB; Model=PC601 SED NVMe SK hynix 1TB; SerialNumber=ACE4_2E00_157D_071D_2EE4_AC00_0000_0001.; MediaType=SSD; MediaTypePriority=1; BusType=NVMe; BusTypePriority=1; SizeInGB=953.87}}
 
 DiskListCount                     : 2
 
-DesiredOperatingSystemDisk        : @{DiskNumber=1; Manufacturer=; FriendlyName=Micron 2300 NVMe 1024GB; Model=Micron 2300 NVMe 1024GB; 
-                                    SerialNumber=0000_0000_0000_0001_00A0_7521_2E85_6C41.; MediaType=SSD; MediaTypePriority=1; BusType=NVMe; BusTypePriority=1; SizeInGB=953.87}
+DesiredOperatingSystemDisk        : @{DiskNumber=1; Manufacturer=; FriendlyName=Micron 2300 NVMe 1024GB; Model=Micron 2300 NVMe 1024GB; SerialNumber=0000_0000_0000_0001_00A0_7521_2E85_6C41.; MediaType=SSD; MediaTypePriority=1; BusType=NVMe; BusTypePriority=1; SizeInGB=953.87}
 
 DesiredOperatingSystemDiskLocated : True
 
