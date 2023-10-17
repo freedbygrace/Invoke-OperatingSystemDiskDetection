@@ -25,7 +25,12 @@
         [Parameter(Mandatory=$False)]
         [ValidateNotNullOrEmpty()]
         [Alias('BTEE')]
-        [Regex]$BusTypeExclusionExpression = '(^USB$)'
+        [Regex]$BusTypeExclusionExpression = '(^USB$)',
+
+        [Parameter(Mandatory=$False)]
+        [ValidateNotNullOrEmpty()]
+        [Alias('DST')]
+        [UInt32]$DiskSizeThresholdInGB = 32
     )
 
 Try
@@ -201,7 +206,7 @@ Try
           $DiskPropertyList.Add(@{Name = 'BusTypePriority'; Expression = ($DetermineBusTypePriority)})
           $DiskPropertyList.Add(@{Name = 'SizeInGB'; Expression = {[System.Math]::Round(($_.Size / 1GB), 2)}})
 
-        $OutputObjectProperties.DiskList = Get-PhysicalDisk | Where-Object {($_.BusType -inotmatch $BusTypeExclusionExpression)} | Sort-Object -Property @('Size') | Select-Object -Property ($DiskPropertyList)
+        $OutputObjectProperties.DiskList = Get-PhysicalDisk | Where-Object {($_.BusType -inotmatch $BusTypeExclusionExpression) -and ($_.Size -gt ($DiskSizeThresholdInGB / 1GB))} | Sort-Object -Property @('Size') | Select-Object -Property ($DiskPropertyList)
         $OutputObjectProperties.DiskListCount = ($OutputObjectProperties.DiskList | Measure-Object).Count
         $OutputObjectProperties.DesiredOperatingSystemDisk = $Null
         $OutputObjectProperties.DesiredOperatingSystemDiskLocated = $False
