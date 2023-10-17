@@ -33,7 +33,7 @@
         [Parameter(Mandatory=$False)]
         [ValidateNotNullOrEmpty()]
         [Alias('DST')]
-        [UInt64]$DiskSizeThresholdInGB = 1024
+        [UInt64]$DiskSizeThresholdInGB = 32
     )
 
 Try
