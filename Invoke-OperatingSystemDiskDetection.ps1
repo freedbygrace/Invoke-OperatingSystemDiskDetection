@@ -1,4 +1,4 @@
-﻿<#
+<#
     .SYNOPSIS
     Dynamically determines the desired operating system disk based on a calculated MediaType and BusType priority.
 
@@ -9,6 +9,9 @@
                     
     .PARAMETER BusTypeExclusionExpression
     A valid regular expression to exclude disks for from consideration based on their bus type. By default, USB based disks will be excluded.
+
+    .PARAMETER DiskSizeThresholdInGB
+    Grants the ability to filter out disks that are smaller than the specified value in gigabytes. This is useful for situations where an Intel Optane Memory Cache might be present.
 
     .NOTES
     By default, the operating system will get deployed onto the fatest and smallest disk.
@@ -30,7 +33,7 @@
         [Parameter(Mandatory=$False)]
         [ValidateNotNullOrEmpty()]
         [Alias('DST')]
-        [UInt32]$DiskSizeThresholdInGB = 32
+        [UInt64]$DiskSizeThresholdInGB = 1024
     )
 
 Try
@@ -162,9 +165,9 @@ Try
                                                       Switch -Regex ($_.MediaType)
                                                         {
                                                             '(^4$)|(^SSD$)' {1}
-							    '(^3$)|(^HDD$)' {2}
-							    '(^5$)|(^SCM$)' {3}
-							    '(^0$)|(^Unspecified$)' {4}   
+						            '(^3$)|(^HDD$)' {2}
+						            '(^5$)|(^SCM$)' {3}
+						            '(^0$)|(^Unspecified$)' {4}   
                                                         }
                                                    }
 
@@ -172,20 +175,20 @@ Try
                                                     Switch -Regex ($_.BusType)
                                                       {
                                                           '(^17$)|(^NVMe$)' {1}
-						      	  '(^11$)|(^SATA$)' {2}
-						      	  '(^8$)|(^RAID$)' {3}
+							  '(^11$)|(^SATA$)' {2}
+							  '(^8$)|(^RAID$)' {3}
 						      	  '(^10$)|(^SAS$)' {4}
 						      	  '(^12$)|(^SD$)' {5}
 						      	  '(^7$)|(^USB$)' {6}
 						      	  '(^1$)|(^SCSI$)' {7}
 						      	  '(^6$)|(^Fibre Channel$)' {8}
 						      	  '(^3$)|(^ATA$)' {9}
-						      	  '(^15$)|(^File Backed Virtual$)' {10}
+							  '(^15$)|(^File Backed Virtual$)' {10}
 						      	  '(^2$)|(^ATAPI$)' {11}
 						      	  '(^4$)|(^1394$)' {12}
 						      	  '(^5$)|(^SSA$)' {13}
 						      	  '(^9$)|(^iSCSI$)' {14}
-						      	  '(^13$)|(^MMC$)' {15}
+						 	  '(^13$)|(^MMC$)' {15}
 						      	  '(^14$)|(^MAX$)' {16}
 						      	  '(^16$)|(^Storage Spaces$)' {17}
 						      	  '(^0$)|(^Unknown$)' {18}
@@ -205,14 +208,25 @@ Try
           $DiskPropertyList.Add('BusType')
           $DiskPropertyList.Add(@{Name = 'BusTypePriority'; Expression = ($DetermineBusTypePriority)})
           $DiskPropertyList.Add(@{Name = 'SizeInGB'; Expression = {[System.Math]::Round(($_.Size / 1GB), 2)}})
+          $DiskPropertyList.Add(@{Name = 'SizeInBytes'; Expression = {$_.Size}})      
 
-        $OutputObjectProperties.DiskList = Get-PhysicalDisk | Where-Object {($_.BusType -inotmatch $BusTypeExclusionExpression) -and ($_.Size -gt ($DiskSizeThresholdInGB / 1GB))} | Sort-Object -Property @('Size') | Select-Object -Property ($DiskPropertyList)
-        $OutputObjectProperties.DiskListCount = ($OutputObjectProperties.DiskList | Measure-Object).Count
-        $OutputObjectProperties.DesiredOperatingSystemDisk = $Null
-        $OutputObjectProperties.DesiredOperatingSystemDiskLocated = $False
-        $OutputObjectProperties.IsTaskSequenceRunning = $IsRunningTaskSequence
+      $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Attempting to search for any disk(s) matching the specified criteria. Please Wait..."
+      Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
 
-      $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Detected $($OutputObjectProperties.DiskListCount) physical disk(s)."
+      [UInt64]$DiskSizeThresholdInBytes = $DiskSizeThresholdInGB * 1GB
+
+      [ScriptBlock]$DiskListerCriteria = {($_.BusType -inotmatch $BusTypeExclusionExpression) -and ($_.Size -gt $DiskSizeThresholdInBytes)}
+      
+      $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Disk List Criteria: $($DiskListerCriteria)"
+      Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
+        
+      $OutputObjectProperties.DiskList = Get-PhysicalDisk | Where-Object -FilterScript ($DiskListerCriteria) | Sort-Object -Property @('Size') | Select-Object -Property ($DiskPropertyList)
+      $OutputObjectProperties.DiskListCount = ($OutputObjectProperties.DiskList | Measure-Object).Count
+      $OutputObjectProperties.DesiredOperatingSystemDisk = $Null
+      $OutputObjectProperties.DesiredOperatingSystemDiskLocated = $False
+      $OutputObjectProperties.IsTaskSequenceRunning = $IsRunningTaskSequence
+
+      $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Detected $($OutputObjectProperties.DiskListCount) disk(s) meeting the specified criteria."
       Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
 
       Switch ($OutputObjectProperties.DiskListCount -gt 0)
