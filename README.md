@@ -68,6 +68,6 @@ DesiredOperatingSystemDiskLocated : True
 IsTaskSequenceRunning             : True
 
 <img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0001.jpg" alt="Alt text" title="Optional title">
-<img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0001.jpg" alt="Alt text" title="Optional title">
-<img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0001.jpg" alt="Alt text" title="Optional title">
-<img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0001.jpg" alt="Alt text" title="Optional title">
+<img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0002.jpg" alt="Alt text" title="Optional title">
+<img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0003.jpg" alt="Alt text" title="Optional title">
+<img src="https://github.com/freedbygrace/Invoke-OperatingSystemDiskDetection/blob/main/Example/MECM-OSD-OSDiskDetection-0004.jpg" alt="Alt text" title="Optional title">
