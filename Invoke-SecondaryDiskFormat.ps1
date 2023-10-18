@@ -4,14 +4,14 @@ Try
         Try {[System.__ComObject]$TSEnvironment = New-Object -ComObject "Microsoft.SMS.TSEnvironment"} Catch {}
 
       #Define variable(s)
-        [Regex]$BusTypeExclusions = "USB"
+        [Regex]$BusTypeExclusions = "(^USB$)"
         [String[]]$RequiredModules = @("Storage")
         
         $IsUEFI = [Boolean]::Parse($TSEnvironment.Value('_SMSTSBootUEFI'))
         $LogMessage = "IsUEFI = $($IsUEFI.ToString())"
         Write-Verbose -Message "$($LogMessage)" -Verbose
         
-        [Int]$OperatingSystemDiskNumber = $TSEnvironment.Value('OSDiskNumber')
+        [UInt32]$OperatingSystemDiskNumber = $TSEnvironment.Value('OSDDiskIndex')
         $LogMessage = "Operating System Disk Number = $($OperatingSystemDiskNumber)"
         Write-Verbose -Message "$($LogMessage)" -Verbose
         
@@ -75,18 +75,18 @@ Try
                                                                   
                                                                   [String]$StatusMessage = "$($ActivityMessage)"
                                                                   
-                                                                  [Int]$RandomNumber = Get-Random -Minimum 100 -Maximum 999
+                                                                  [Int]$ProgressID = 1
                                                                   
-                                                                  Write-Progress -ID ($RandomNumber) -Activity ($ActivityMessage) -Status ($StatusMessage)
+                                                                  Write-Progress -ID ($ProgressID) -Activity ($ActivityMessage) -Status ($StatusMessage)
                                                                 
                                                                   Switch ($GetDataDiskInfo.Invoke())
                                                                     {
-                                                                        {($_.PartitionStyle -imatch "^RAW$")}
+                                                                        {($_.PartitionStyle -imatch "(^RAW$)")}
                                                                           {
                                                                               $Null = Initialize-Disk -InputObject ($GetDataDiskInfo.Invoke()) -PartitionStyle ($PartitionStyle) -PassThru -Confirm:$False -Verbose
                                                                           }
                                                                                 
-                                                                        {($_.PartitionStyle -inotmatch "^RAW$")}
+                                                                        {($_.PartitionStyle -inotmatch "(^RAW$)")}
                                                                           {
                                                                               $Null = Clear-Disk -InputObject ($GetDataDiskInfo.Invoke()) -RemoveData -Confirm:$False -PassThru -Verbose
                                                                               $Null = Initialize-Disk -InputObject ($GetDataDiskInfo.Invoke()) -PartitionStyle ($PartitionStyle) -PassThru -Confirm:$False -Verbose
@@ -95,12 +95,12 @@ Try
                                                                         
                                                                   $Null = New-Partition -InputObject ($GetDataDiskInfo.Invoke()) -UseMaximumSize -AssignDriveLetter -Verbose | Format-Volume -FileSystem NTFS -NewFileSystemLabel ($DataDiskVolumeName) -Confirm:$False -Verbose
       
-                                                                  Write-Progress -ID ($RandomNumber) -Activity ($ActivityMessage) -Completed
+                                                                  Write-Progress -ID ($ProgressID) -Activity ($ActivityMessage) -Completed
                                                            }
 
                     If (($GetDataDiskInfo.Invoke()).NumberOfPartitions -gt 0)
                       {
-                          $DataDiskVolumes = $GetDataDiskInfo.Invoke() | Get-Partition | Get-Volume | Where-Object {($_.DriveLetter -imatch "^[a-zA-Z]$")}
+                          $DataDiskVolumes = $GetDataDiskInfo.Invoke() | Get-Partition | Get-Volume | Where-Object {($_.DriveLetter -imatch "(^[a-zA-Z]$)")}
 
                           $DataDiskVolumeCount = $DataDiskVolumes | Measure-Object | Select-Object -ExpandProperty Count
 
