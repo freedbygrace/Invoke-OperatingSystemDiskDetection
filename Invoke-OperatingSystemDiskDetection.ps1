@@ -220,7 +220,7 @@ Try
       $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Disk List Criteria: $($DiskListerCriteria)"
       Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
         
-      $OutputObjectProperties.DiskList = Get-PhysicalDisk | Where-Object -FilterScript ($DiskListerCriteria) | Sort-Object -Property @('Size') | Select-Object -Property ($DiskPropertyList)
+      $OutputObjectProperties.DiskList = Get-PhysicalDisk | Where-Object -FilterScript ($DiskListerCriteria) | Sort-Object -Property @('MediaTypePriority', 'BusTypePriority', 'Size') | Select-Object -Property ($DiskPropertyList)
       $OutputObjectProperties.DiskListCount = ($OutputObjectProperties.DiskList | Measure-Object).Count
       $OutputObjectProperties.DesiredOperatingSystemDisk = $Null
       $OutputObjectProperties.DesiredOperatingSystemDiskLocated = $False
