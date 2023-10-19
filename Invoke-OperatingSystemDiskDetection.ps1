@@ -320,12 +320,18 @@ Try
                                             $TSVariableDictionary.'OSDiskNumber' = $OutputObjectProperties.DesiredOperatingSystemDisk.DiskNumber
                                             $TSVariableDictionary.'OSDDiskCount' = $OutputObjectProperties.DiskListCount
 
-                                          ForEach ($TSVariable In $TSVariableDictionary.GetEnumerator())
+                                          Switch ($TSVariableDictionary.Keys.Count -gt 0)
                                             {
-                                                $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Attempting to the value of task sequence variable `"$($TSVariable.Key)`" to `"$($TSVariable.Value)`". Please Wait..."
-                                                Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
+                                                {($_ -eq $True)}
+                                                  {
+                                                      ForEach ($TSVariable In $TSVariableDictionary.GetEnumerator())
+                                                        {
+                                                            $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Attempting to the value of task sequence variable `"$($TSVariable.Key)`" to `"$($TSVariable.Value)`". Please Wait..."
+                                                            Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
 
-                                                $TSEnvironment.Value($TSVariable.Key) = $TSVariable.Value
+                                                            $TSEnvironment.Value($TSVariable.Key) = $TSVariable.Value
+                                                        }
+                                                  }
                                             }
                                       }
                                 }
