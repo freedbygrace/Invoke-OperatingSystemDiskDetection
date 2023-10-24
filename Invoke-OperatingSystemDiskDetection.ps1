@@ -165,9 +165,9 @@ Try
                                                       Switch -Regex ($_.MediaType)
                                                         {
                                                             '(^4$)|(^SSD$)' {1}
-						            '(^3$)|(^HDD$)' {2}
-						            '(^5$)|(^SCM$)' {3}
-						            '(^0$)|(^Unspecified$)' {4}   
+						                                                '(^3$)|(^HDD$)' {2}
+						                                                '(^5$)|(^SCM$)' {3}
+						                                                '(^0$)|(^Unspecified$)' {4}   
                                                         }
                                                    }
 
@@ -175,23 +175,23 @@ Try
                                                     Switch -Regex ($_.BusType)
                                                       {
                                                           '(^17$)|(^NVMe$)' {1}
-							  '(^11$)|(^SATA$)' {2}
-							  '(^8$)|(^RAID$)' {3}
-						      	  '(^10$)|(^SAS$)' {4}
-						      	  '(^12$)|(^SD$)' {5}
-						      	  '(^7$)|(^USB$)' {6}
-						      	  '(^1$)|(^SCSI$)' {7}
-						      	  '(^6$)|(^Fibre Channel$)' {8}
-						      	  '(^3$)|(^ATA$)' {9}
-							  '(^15$)|(^File Backed Virtual$)' {10}
-						      	  '(^2$)|(^ATAPI$)' {11}
-						      	  '(^4$)|(^1394$)' {12}
-						      	  '(^5$)|(^SSA$)' {13}
-						      	  '(^9$)|(^iSCSI$)' {14}
-						 	  '(^13$)|(^MMC$)' {15}
-						      	  '(^14$)|(^MAX$)' {16}
-						      	  '(^16$)|(^Storage Spaces$)' {17}
-						      	  '(^0$)|(^Unknown$)' {18}
+							                                            '(^11$)|(^SATA$)' {2}
+							                                            '(^8$)|(^RAID$)' {3}
+						      	                                      '(^10$)|(^SAS$)' {4}
+						      	                                      '(^12$)|(^SD$)' {5}
+						      	                                      '(^7$)|(^USB$)' {6}
+						      	                                      '(^1$)|(^SCSI$)' {7}
+						      	                                      '(^6$)|(^Fibre Channel$)' {8}
+						      	                                      '(^3$)|(^ATA$)' {9}
+							                                            '(^15$)|(^File Backed Virtual$)' {10}
+						      	                                      '(^2$)|(^ATAPI$)' {11}
+						      	                                      '(^4$)|(^1394$)' {12}
+						      	                                      '(^5$)|(^SSA$)' {13}
+						      	                                      '(^9$)|(^iSCSI$)' {14}
+						 	                                            '(^13$)|(^MMC$)' {15}
+						      	                                      '(^14$)|(^MAX$)' {16}
+						      	                                      '(^16$)|(^Storage Spaces$)' {17}
+						      	                                      '(^0$)|(^Unknown$)' {18}
                                                           '(^18$)|(^Microsoft Reserved$)' {19}
                                                       }
                                                  }
@@ -309,6 +309,48 @@ Try
                                 {
                                     $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - $($DesiredOperatingSystemDiskProperty.Name): $($DesiredOperatingSystemDiskProperty.Value -Join ', ')"
                                     Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
+                                }
+                                
+                              $GetDiskInfo = {Get-Disk -Number ($OutputObjectProperties.DesiredOperatingSystemDisk.DiskNumber)}
+                              
+                              $DiskInfo = $GetDiskInfo.InvokeReturnAsIs()
+                      
+                              Switch ($DiskInfo.IsOffline)
+                                {
+                                    {($_ -eq $True)}
+                                      {
+                                          $LoggingDetails.WarningMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Disk $($DiskInfo.Number) is currently in `"Offline`" mode and will be set to `"Online`" mode. Please Wait..."
+                                          Write-Verbose -Message ($LoggingDetails.WarningMessage) -Verbose
+                                      
+                                          $Null = Set-Disk -Number ($DiskInfo.Number) -IsOffline:$False
+
+                                          $DiskInfo = $GetDiskInfo.InvokeReturnAsIs()
+                                      }
+                                  
+                                    {($_ -eq $False)}
+                                      {
+                                          $LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Disk $($DiskInfo.Number) is already set to `"Online`" mode. Skipping operation..."
+                                          Write-Verbose -Message "$($LogMessage)" -Verbose
+                                      }
+                                }
+
+                              Switch ($DiskInfo.IsReadOnly)
+                                {
+                                    {($_ -eq $True)}
+                                      {
+                                          $LoggingDetails.WarningMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Disk $($DiskInfo.Number) is currently in `"Read-Only`" mode and will be set to `"Read-Write`" mode. Please Wait..."
+                                          Write-Verbose -Message ($LoggingDetails.WarningMessage) -Verbose
+                                      
+                                          $Null = Set-Disk -Number ($DiskInfo.Number) -IsReadOnly:$False
+
+                                          $DiskInfo = $GetDiskInfo.InvokeReturnAsIs()
+                                      }
+                                  
+                                    {($_ -eq $False)}
+                                      {
+                                          $LoggingDetails.LogMessage = "$($GetCurrentDateTimeMessageFormat.Invoke()) - Disk $($DiskInfo.Number) is already set to `"Read-Write`" mode. Skipping operation..."
+                                          Write-Verbose -Message ($LoggingDetails.LogMessage) -Verbose
+                                      }
                                 }
 
                               Switch ($IsRunningTaskSequence)
