@@ -45,17 +45,29 @@ Try
           {
               ForEach ($DataDisk In $DataDisks)
                 {    
-                    [Int]$DataDiskNumber = $DataDisk.DeviceID
+                    [System.Int32]$DataDiskNumber = $DataDisk.DeviceID
                     
-                    [String]$DataDiskVolumeName = "DATA00$($DataDiskNumber)"
+                    [String]$DataDiskVolumeName = "DATA$($DataDiskNumber.ToString('000'))"
                 
-                    $TaskSequenceVariableName = "OSDFormatDataDisk00$($DataDiskNumber)"
+                    $TaskSequenceVariableName = "OSDFormatDataDisk$($DataDiskNumber.ToString('000'))"
                     
                     $TSEnvironment.Value($TaskSequenceVariableName) = "False"
                                   
-                    [ScriptBlock]$GetDataDiskInfo = {Get-Disk -Number ($DataDiskNumber)}
+                    [ScriptBlock]$GetDataDiskInfo = {
+                                                        Param
+                                                          (
+                                                              [System.Int32]$DiskNumber
+                                                          )
+                                                        
+                                                        Write-Output -InputObject (Get-Disk -Number ($DiskNumber))
+                                                    }
                     
                     [ScriptBlock]$FormatAndPartitionDisk = {
+                                                              Param
+                                                                (
+                                                                    [System.Int32]$DiskNumber
+                                                                )
+                                                              
                                                               #Clean the disk and format it according to the specification(s)
                                                                 Switch ($IsUEFI)
                                                                   {
@@ -71,7 +83,7 @@ Try
                                                                   }
                                                 
                                                                 #Perform disk partitioning and formatting
-                                                                  [String]$ActivityMessage = "Attempting to format and partition data disk $($DataDiskNumber). Please Wait..."
+                                                                  [String]$ActivityMessage = "Attempting to format and partition data disk $($DiskNumber). Please Wait..."
                                                                   
                                                                   [String]$StatusMessage = "$($ActivityMessage)"
                                                                   
@@ -79,66 +91,76 @@ Try
                                                                   
                                                                   Write-Progress -ID ($ProgressID) -Activity ($ActivityMessage) -Status ($StatusMessage)
                                                                 
-                                                                  Switch ($GetDataDiskInfo.Invoke())
+                                                                  Switch ($GetDataDiskInfo.Invoke($DiskNumber))
                                                                     {
                                                                         {($_.PartitionStyle -imatch "(^RAW$)")}
                                                                           {
-                                                                              $Null = Initialize-Disk -InputObject ($GetDataDiskInfo.Invoke()) -PartitionStyle ($PartitionStyle) -PassThru -Confirm:$False -Verbose
+                                                                              $Null = Initialize-Disk -InputObject ($GetDataDiskInfo.Invoke($DiskNumber)) -PartitionStyle ($PartitionStyle) -PassThru -Confirm:$False -Verbose
                                                                           }
                                                                                 
                                                                         {($_.PartitionStyle -inotmatch "(^RAW$)")}
                                                                           {
-                                                                              $Null = Clear-Disk -InputObject ($GetDataDiskInfo.Invoke()) -RemoveData -Confirm:$False -PassThru -Verbose
-                                                                              $Null = Initialize-Disk -InputObject ($GetDataDiskInfo.Invoke()) -PartitionStyle ($PartitionStyle) -PassThru -Confirm:$False -Verbose
+                                                                              $Null = Clear-Disk -InputObject ($GetDataDiskInfo.Invoke($DiskNumber)) -RemoveData -Confirm:$False -PassThru -Verbose
+                                                                              $Null = Initialize-Disk -InputObject ($GetDataDiskInfo.Invoke($DiskNumber)) -PartitionStyle ($PartitionStyle) -PassThru -Confirm:$False -Verbose
                                                                           }       
                                                                     }
                                                                         
-                                                                  $Null = New-Partition -InputObject ($GetDataDiskInfo.Invoke()) -UseMaximumSize -AssignDriveLetter -Verbose | Format-Volume -FileSystem NTFS -NewFileSystemLabel ($DataDiskVolumeName) -Confirm:$False -Verbose
+                                                                  $Null = New-Partition -InputObject ($GetDataDiskInfo.Invoke($DiskNumber)) -UseMaximumSize -AssignDriveLetter -Verbose | Format-Volume -FileSystem NTFS -NewFileSystemLabel ($DataDiskVolumeName) -Confirm:$False -Verbose
       
                                                                   Write-Progress -ID ($ProgressID) -Activity ($ActivityMessage) -Completed
                                                            }
 
-                    If (($GetDataDiskInfo.Invoke()).NumberOfPartitions -gt 0)
-                      {
-                          $DataDiskVolumes = $GetDataDiskInfo.Invoke() | Get-Partition | Get-Volume | Where-Object {($_.DriveLetter -imatch "(^[a-zA-Z]$)")}
+                    #Determine if the disk should be formatted
+                      Switch ($True)
+                        {
+                            {(($GetDataDiskInfo.Invoke($DataDiskNumber)).NumberOfPartitions -gt 0)}
+                              {
+                                  $DataDiskVolumes = $GetDataDiskInfo.Invoke($DataDiskNumber) | Get-Partition | Get-Volume | Where-Object {($_.DriveLetter -imatch "(^[a-zA-Z]$)")}
 
-                          $DataDiskVolumeCount = $DataDiskVolumes | Measure-Object | Select-Object -ExpandProperty Count
+                                  $DataDiskVolumeCount = $DataDiskVolumes | Measure-Object | Select-Object -ExpandProperty Count
 
-                          If ($DataDiskVolumeCount -gt 0)
-                            {
-                                ForEach ($DataDiskVolume In $DataDiskVolumes)
-                                  {
-                                      $FoldersInVolumeRoot = Get-ChildItem -Path "$($DataDiskVolume.DriveLetter):\" -Force | Where-Object {($_ -is [System.IO.DirectoryInfo])}
+                                  Switch ($DataDiskVolumeCount -gt 0)
+                                    {
+                                        {($_ -eq $True)}
+                                          {
+                                              :DataDiskVolumeLoop ForEach ($DataDiskVolume In $DataDiskVolumes)
+                                                {
+                                                    $FoldersInVolumeRoot = Get-ChildItem -Path "$($DataDiskVolume.DriveLetter):\" -Force | Where-Object {($_ -is [System.IO.DirectoryInfo])}
 
-                                      If ($FoldersInVolumeRoot.Name -imatch "^Windows|Windows\.Old$")
-                                        {
-                                            #Set the value of the 'OSDFormatDataDisk' variable which will tell the task sequence that this disk is ok to wipe
-                                              $TSEnvironment.Value($TaskSequenceVariableName) = "True"
+                                                    Switch ($True)
+                                                      {
+                                                          {($FoldersInVolumeRoot.Name -imatch "(^Windows$)|(^Windows\.Old$)")}
+                                                            {
+                                                                #Set the value of the 'OSDFormatDataDisk' variable which will tell the task sequence that this disk is ok to wipe
+                                                                  $TSEnvironment.Value($TaskSequenceVariableName) = "True"
                                               
-                                            $LogMessage = "Disk $($DataDiskNumber) will be wiped and formatted because a previous Windows installation was detected and could cause errors with the installation of the new operating system."
-                                            Write-Verbose -Message "$($LogMessage)" -Verbose
+                                                                $LogMessage = "Disk $($DataDiskNumber) will be wiped and formatted because a previous Windows installation was detected and could cause errors with the installation of the new operating system."
+                                                                Write-Verbose -Message "$($LogMessage)" -Verbose
                                               
-                                            #Clean the disk and format it according to the specification(s)
-                                              $FormatAndPartitionDisk.Invoke()
+                                                                #Clean the disk and format it according to the specification(s)
+                                                                  $FormatAndPartitionDisk.Invoke($DataDiskNumber)
 
-                                            #Exit the for loop because at least one volume has already met the requirements for the disk to be formatted
-                                              Break
-                                        }
-                                  }
-                            }
-                      }
+                                                                #Exit the for loop because at least one volume has already met the requirements for the disk to be formatted
+                                                                  Break DataDiskVolumeLoop
+                                                            }
+                                                      }
+                                                }
+                                          }
+                                    }
+                              }
 
-                    If (($GetDataDiskInfo.Invoke().NumberOfPartitions -eq 0) -or ($GetDataDiskInfo.Invoke().PartitionStyle -imatch '^RAW$'))
-                      {
-                          $LogMessage = "Disk $($DataDiskNumber) will be wiped and formatted because no partition(s) or volume(s) could be found. The disk has not been provisioned."
-                          Write-Verbose -Message "$($LogMessage)" -Verbose
+                            {(($GetDataDiskInfo.Invoke($DataDiskNumber).NumberOfPartitions -eq 0) -or ($GetDataDiskInfo.Invoke($DataDiskNumber).PartitionStyle -imatch '^RAW$'))}
+                              {
+                                  $LogMessage = "Disk $($DataDiskNumber) will be wiped and formatted because no partition(s) or volume(s) could be found. The disk has not been provisioned."
+                                  Write-Verbose -Message "$($LogMessage)" -Verbose
                       
-                          #Set the value of the 'OSDFormatDataDisk' variable which will tell the task sequence that this disk is ok to wipe
-                            $TSEnvironment.Value($TaskSequenceVariableName) = "True"
+                                  #Set the value of the 'OSDFormatDataDisk' variable which will tell the task sequence that this disk is ok to wipe
+                                    $TSEnvironment.Value($TaskSequenceVariableName) = "True"
                             
-                          #Clean the disk and format it according to the specification(s)
-                            $FormatAndPartitionDisk.Invoke()
-                      }
+                                  #Clean the disk and format it according to the specification(s)
+                                    $FormatAndPartitionDisk.Invoke($DataDiskNumber)
+                              }
+                        }
                 }
           }
   }
